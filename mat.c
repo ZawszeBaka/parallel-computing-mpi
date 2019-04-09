@@ -1,3 +1,10 @@
+/*
+	Refs: https://www.daniweb.com/programming/software-development/code/334470/matrix-multiplication-using-mpi-parallel-programming-approach#
+	Matrix multiplication using MPI - Non-Blocking
+	
+	@Need-fix: using point-to-point only, not MPI_Bcast. 
+*/
+
 #include<stdio.h>
 #include<mpi.h>
 
