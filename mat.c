@@ -1,16 +1,9 @@
-/*
-	Refs: https://www.daniweb.com/programming/software-development/code/334470/matrix-multiplication-using-mpi-parallel-programming-approach#
-	Matrix multiplication using MPI - Non-Blocking
-	
-	@Need-fix: using point-to-point only, not MPI_Bcast. 
-*/
-
 #include<stdio.h>
 #include<mpi.h>
 
 #define NUM_DIMS 100 
 #define MASTER_TO_SLAVE_TAG 1 // tag for messages sent from master to slaves
-#define SLAVE_TO_MASTER_TAG 4 // tag for messages sent from slaves to master
+#define SLAVE_TO_MASTER_TAG 10 // tag for messages sent from slaves to master
 
 void makeAB(); // makeks the [A] and [B] matrices
 void printArray(); // print the content of output matrix
@@ -64,16 +57,18 @@ int main(int argc, char **argv)
 			MPI_Isend(&low_bound, 1, MPI_INT, i, MASTER_TO_SLAVE_TAG, MPI_COMM_WORLD, &request);
 			MPI_Isend(&upper_bound, 1, MPI_INT, i, MASTER_TO_SLAVE_TAG+1, MPI_COMM_WORLD, &request);
 			MPI_Isend(&mat_a[low_bound][0], (upper_bound-low_bound)*NUM_DIMS, MPI_DOUBLE, i, MASTER_TO_SLAVE_TAG+2, MPI_COMM_WORLD, &request);
+			MPI_Isend(&mat_b[0][0], NUM_DIMS*NUM_DIMS, MPI_DOUBLE, i, MASTER_TO_SLAVE_TAG+3, MPI_COMM_WORLD, &request);
 		}
 	}
 
-	MPI_Bcast(&mat_b, NUM_DIMS*NUM_DIMS,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	//MPI_Bcast(&mat_b, NUM_DIMS*NUM_DIMS,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
 	if(rank>0){
 		// receive submatrix of mat_a 
 		MPI_Recv(&low_bound, 1, MPI_INT, 0 ,MASTER_TO_SLAVE_TAG, MPI_COMM_WORLD, &status);
 		MPI_Recv(&upper_bound, 1, MPI_INT, 0, MASTER_TO_SLAVE_TAG+1, MPI_COMM_WORLD, &status);
 		MPI_Recv(&mat_a[low_bound][0], (upper_bound-low_bound)*NUM_DIMS, MPI_DOUBLE, 0, MASTER_TO_SLAVE_TAG+2, MPI_COMM_WORLD, &status);
+		MPI_Recv(&mat_b[0][0], NUM_DIMS*NUM_DIMS, MPI_DOUBLE, 0, MASTER_TO_SLAVE_TAG+3, MPI_COMM_WORLD, &status);
 
 		for(rowA=low_bound; rowA<upper_bound; rowA++){
 			for(colB=0; colB<NUM_DIMS; colB++){
@@ -98,8 +93,8 @@ int main(int argc, char **argv)
 			MPI_Recv(&mat_rs[low_bound][0], (upper_bound-low_bound)*NUM_DIMS, MPI_DOUBLE, i, SLAVE_TO_MASTER_TAG+2,MPI_COMM_WORLD, &status);
 		}
 		end_time=MPI_Wtime();
-		printf("\n\n[RESULT] Running time = %.10f second(s)\n\n", end_time-start_time);
 		print_matrices();
+		printf("\n\n[RESULT] Running time = %.10f second(s)\n\n", end_time-start_time);
 	}
 
 	MPI_Finalize();
@@ -111,9 +106,9 @@ void init_matrices_AB()
 {
 	for(row=0; row<NUM_DIMS; row++){
 		for(col=0; col<NUM_DIMS; col++){
-			mat_a[row][col] = (double)col;
+			mat_a[row][col] = (double)col + 1.0;
 			//printf("\n[DEBUG] %.5f", mat_a[row][col]);
-			mat_b[row][col] = (double)col;
+			mat_b[row][col] = (double)col + 1.0;
 		}
 	}
 }
